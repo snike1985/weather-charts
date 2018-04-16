@@ -1,6 +1,14 @@
 .charts {
   padding: 20px 0;
 
+  &__date {
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #fff;
+    background-color: #3365cc;
+  }
+
   &__filter {
     max-width: calc(100% - 40px);
     margin: 0 auto 20px;

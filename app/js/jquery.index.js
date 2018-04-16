@@ -4,7 +4,8 @@
         new Weather();
 
         $('select').selectize({
-            maxItems: 5
+            maxItems: 5,
+            placeholder: 'Select city...'
         });
 
     });
@@ -17,6 +18,7 @@
             _select = $('#city'),
             _fromTime = $('#from-time'),
             _toTime = $('#to-time'),
+            _curDate = $('.charts__date'),
             _chartData = [],
             _sendCounter = 0,
             _chartOptions = {
@@ -157,50 +159,26 @@
             },
             _drawChart = function () {
                 var from = new Date(),
-                    to = new Date();
+                    to = new Date(),
+                    curHours = from.getHours();
 
                 from.setHours(_fromTime.val().slice(0, -3), 0, 0, 0);
                 to.setHours(_toTime.val().slice(0, -3), 0, 0, 0);
 
-                if (_fromTime.val().slice(0, -3) == '00' || _toTime.val().slice(0, -3) == '00') {
+                if (_fromTime.val().slice(0, -3) == '00') {
                     from.setHours(from.getHours() - 1);
-                    to.setHours(to.getHours() + 1);
                 }
 
-                _drawTemp(from, to);
-                _drawPressure(from, to);
-                _drawHumidity(from, to);
-                _drawWind(from, to);
+                if (_toTime.val().slice(0, -3) == '00' || _toTime.val().slice(0, -3) <= curHours) {
+                    to.setDate(to.getDate() + 1);
+                }
+
+                _setChartData(from, to, 'Temp');
+                _setChartData(from, to, 'Pressure');
+                _setChartData(from, to, 'Humidity');
+                _setChartData(from, to, 'Wind');
             },
-            _drawTemp = function (fromTime, toTime) {
-                var dataArr = [['hours']];
-
-                    _chartData.forEach(function (elem, index) {
-                    dataArr[0].push(elem.city.name);
-
-                    var pos = 1;
-
-                    elem.list.forEach(function (item) {
-
-                        var itemTimestamp = item.dt*1000,
-                            date = new Date(itemTimestamp),
-                            hours = date.getHours();
-
-                        if (itemTimestamp >= fromTime.getTime() && itemTimestamp <= toTime.getTime()) {
-                            if (index) {
-                                dataArr[pos].push(item.main.temp);
-                                pos++;
-                            } else {
-                                dataArr.push([hours + ':00', item.main.temp]);
-                            }
-                        }
-                    });
-                });
-
-                _showChart(dataArr, 'Temp', _chartTemp);
-
-            },
-            _drawPressure = function (fromTime, toTime) {
+            _setChartData = function (fromTime, toTime, type) {
                 var dataArr = [['hours']];
 
                 _chartData.forEach(function (elem, index) {
@@ -212,76 +190,57 @@
 
                         var itemTimestamp = item.dt*1000,
                             date = new Date(itemTimestamp),
-                            hours = date.getHours();
+                            hours = date.getHours(),
+                            curData = 0;
+
+                        switch (type) {
+                            case 'Temp':
+                                curData = item.main.temp;
+                                break;
+                            case 'Pressure':
+                                curData = item.main.pressure;
+                                break;
+                            case 'Humidity':
+                                curData = item.main.humidity;
+                                break;
+                            case 'Wind':
+                                curData = item.wind.speed;
+                                break;
+                        }
 
                         if (itemTimestamp >= fromTime.getTime() && itemTimestamp <= toTime.getTime()) {
                             if (index) {
-                                dataArr[pos].push(item.main.pressure);
+                                dataArr[pos].push(curData);
                                 pos++;
                             } else {
-                                dataArr.push([hours + ':00', item.main.pressure]);
+                                dataArr.push([hours + ':00', curData]);
                             }
                         }
                     });
                 });
 
-                _showChart(dataArr, 'Pressure', _chartPressure);
+                switch (type) {
+                    case 'Temp':
+                        _showChart(dataArr, type, _chartTemp);
+                        break;
+                    case 'Pressure':
+                        _showChart(dataArr, type, _chartPressure);
+                        break;
+                    case 'Humidity':
+                        _showChart(dataArr, type, _chartHumidity);
+                        break;
+                    case 'Wind':
+                        _showChart(dataArr, type, _chartWind);
+                        break;
+                }
+
             },
-            _drawHumidity = function (fromTime, toTime) {
-                var dataArr = [['hours']];
-
-                _chartData.forEach(function (elem, index) {
-                    dataArr[0].push(elem.city.name);
-
-                    var pos = 1;
-
-                    elem.list.forEach(function (item) {
-
-                        var itemTimestamp = item.dt*1000,
-                            date = new Date(itemTimestamp),
-                            hours = date.getHours();
-
-                        if (itemTimestamp >= fromTime.getTime() && itemTimestamp <= toTime.getTime()) {
-                            if (index) {
-                                dataArr[pos].push(item.main.humidity);
-                                pos++;
-                            } else {
-                                dataArr.push([hours + ':00', item.main.humidity]);
-                            }
-                        }
-                    });
-                });
-
-                _showChart(dataArr, 'Humidity', _chartHumidity);
-            },
-            _drawWind = function (fromTime, toTime) {
-                var dataArr = [['hours']];
-
-                _chartData.forEach(function (elem, index) {
-                    dataArr[0].push(elem.city.name);
-
-                    var pos = 1;
-
-                    elem.list.forEach(function (item) {
-
-                        var itemTimestamp = item.dt*1000,
-                            date = new Date(itemTimestamp),
-                            hours = date.getHours();
-
-                        if (itemTimestamp >= fromTime.getTime() && itemTimestamp <= toTime.getTime()) {
-                            if (index) {
-                                dataArr[pos].push(item.wind.speed);
-                                pos++;
-                            } else {
-                                dataArr.push([hours + ':00', item.wind.speed]);
-                            }
-                        }
-                    });
-                });
-
-                _showChart(dataArr, 'Wind', _chartWind);
+            _setCurDate = function () {
+                var curDate = new Date();
+                _curDate.append(curDate.getDate() + '.' + curDate.getMonth() + '.' + curDate.getFullYear());
             },
             _init = function () {
+                _setCurDate();
                 _createChart();
                 _addEvents();
             };
